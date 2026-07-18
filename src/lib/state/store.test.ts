@@ -226,15 +226,45 @@ describe('store.svelte.ts', () => {
 			expect(store.getCurrentRoutine().id).toBe(s.currentRoutineId);
 		});
 
-		it('creates a recovered routine if routines array is empty', () => {
+		it('returns a throwaway fallback when routines array is empty (no mutation)', () => {
 			const s = store.getState();
 			s.routines.splice(0, s.routines.length);
-			// Verify routines are empty
 			expect(s.routines).toHaveLength(0);
-			// getCurrentRoutine should create a recovered routine
+
+			// getCurrentRoutine should return a fallback WITHOUT mutating state
 			const r = store.getCurrentRoutine();
-			expect(r.name).toBe('Rutina Recuperada');
+			expect(r.name).toBe('');
+			expect(r.id).toBe('');
+			// State should NOT have been mutated
+			expect(s.routines).toHaveLength(0);
+		});
+
+		it('ensures valid routine via loadData when localStorage is empty', () => {
+			// Clear existing routines first
+			const s = store.getState();
+			s.routines.splice(0, s.routines.length);
+			localStorageMock.getItem.mockReturnValue(null);
+
+			// loadData should call ensureValidRoutineId which populates routines
+			store.loadData();
+			expect(s.routines.length).toBeGreaterThan(0);
+			expect(s.currentRoutineId).toBeTruthy();
+		});
+
+		it('loadData ensures valid routineId after restoring from localStorage', () => {
+			localStorageMock.getItem.mockReturnValue(
+				JSON.stringify({
+					routines: [{ id: 'r1', name: 'Test', exercises: [] }],
+					stats: {},
+					sessions: []
+				})
+			);
+
+			store.loadData();
+			const s = store.getState();
 			expect(s.routines).toHaveLength(1);
+			// Since currentRoutineId from localStorage doesn't exist, it should reset to first
+			expect(s.currentRoutineId).toBe('r1');
 		});
 	});
 

@@ -81,6 +81,17 @@
 	let s = $derived(getState());
 
 	// ============================================================
+	// Start/stop the Web Worker when play state changes
+	// ============================================================
+	$effect(() => {
+		if (s.isExercisePlaying) {
+			worker?.postMessage('start');
+		} else if (worker) {
+			worker.postMessage('stop');
+		}
+	});
+
+	// ============================================================
 	// Worker setup + Firebase init
 	// ============================================================
 	onMount(() => {

@@ -87,25 +87,19 @@ export function getState(): StateProxy {
 }
 
 export function getCurrentRoutine(): Routine {
-	if (!Array.isArray(routines)) routines = [];
-	let routine = routines.find((r) => r.id === currentRoutineId);
-	if (!routine) {
-		console.warn('Current routine not found, resetting to first available.');
-		if (routines.length > 0) {
-			currentRoutineId = routines[0].id;
-			routine = routines[0];
-		} else {
-			routine = {
-				id: nanoid(),
-				name: 'Rutina Recuperada',
-				exercises: []
-			};
-			routines = [routine];
-			currentRoutineId = routine.id;
-		}
-		saveData();
+	// Pure getter — NO mutations of $state, NO side effects (no saveData, no console.warn).
+	// This ensures it's safe to call from inside $derived expressions.
+	// Any initialization/fallback logic is handled in loadData() via ensureValidRoutineId().
+	if (!Array.isArray(routines) || routines.length === 0) {
+		// No routines loaded yet (initial state). Return a throwaway fallback.
+		// loadData() will populate routines before the user can interact.
+		return { id: '', name: '', exercises: [] };
 	}
-	return routine;
+	const routine = routines.find((r) => r.id === currentRoutineId);
+	if (routine) return routine;
+	// currentRoutineId doesn't match any routine — return first available without mutating.
+	// loadData() already fixed this via ensureValidRoutineId(), but handle edge case gracefully.
+	return routines[0];
 }
 
 export function getExerciseById(id: string): Exercise | undefined {
@@ -671,6 +665,41 @@ export function deleteDetailExercise(): void {
 	}
 }
 
+/**
+ * Ensure the current routine ID points to a valid routine.
+ * If routines is empty, load sample routines as initial data.
+ * Mutates $state — safe to call from loadData() (onMount) but NOT from $derived.
+ */
+function ensureValidRoutineId(): void {
+	if (!Array.isArray(routines) || routines.length === 0) {
+		// No routines at all — load sample routines as initial state
+		routines = [
+			deepClone(module1Routine),
+			deepClone(module2Routine),
+			deepClone(module3Routine),
+			deepClone(module4Routine),
+			deepClone(module5Routine),
+			deepClone(module6Routine),
+			deepClone(module7Routine),
+			deepClone(module8Routine),
+			deepClone(module9Routine),
+			deepClone(module10Routine),
+			deepClone(module11Routine),
+			deepClone(module12Routine)
+		];
+		currentRoutineId = 'module-1';
+		saveData();
+		return;
+	}
+
+	// Check if currentRoutineId is valid
+	if (!routines.find((r) => r.id === currentRoutineId)) {
+		console.warn('Current routine not found, resetting to first available.');
+		currentRoutineId = routines[0].id;
+		saveData();
+	}
+}
+
 // --- Persistence ---
 
 export function saveData(skipCloudSync?: boolean): void {
@@ -738,6 +767,10 @@ export function loadData(): void {
 			console.error('Error loading data', e);
 		}
 	}
+
+	// After loading (or if empty/errored), ensure we have a valid routine.
+	// This runs in onMount (safe context), NOT inside $derived.
+	ensureValidRoutineId();
 }
 
 /**

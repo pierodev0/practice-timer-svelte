@@ -47,21 +47,21 @@ Each unit has clean `git revert` rollback.
 
 ## Phase 3: Views & Firebase (PR 3)
 
-- [ ] 3.1 `Routines/RoutineCard.svelte`
-- [ ] 3.2 `Routines/RoutinesView.svelte` — CRUD, import/export
-- [ ] 3.3 `src/lib/export.ts` — ExcelJS exports
-- [ ] 3.4 `History/HistoryView.svelte`
-- [ ] 3.5 `Stats/StatCard.svelte`
-- [ ] 3.6 `Stats/StatsView.svelte` — 4 Chart.js charts
-- [ ] 3.7 `src/lib/firebase/config.ts` — init
-- [ ] 3.8 `src/lib/firebase/auth.ts` — Google Auth
-- [ ] 3.9 `src/lib/firebase/device.ts` — UUID
-- [ ] 3.10 `src/lib/firebase/serializer.ts`
-- [ ] 3.11 `src/lib/firebase/merge.ts`
-- [ ] 3.12 `src/lib/firebase/sync.ts` — upload, download, schedule, listener, backups
-- [ ] 3.13 `firebase/serializer.test.ts`
-- [ ] 3.14 `firebase/merge.test.ts`
-- [ ] 3.15 Wire Firebase in +page.svelte
+- [x] 3.1 `Routines/RoutineCard.svelte`
+- [x] 3.2 `Routines/RoutinesView.svelte` — CRUD, import/export
+- [x] 3.3 `src/lib/export.ts` — ExcelJS exports
+- [x] 3.4 `History/HistoryView.svelte`
+- [x] 3.5 `Stats/StatCard.svelte`
+- [x] 3.6 `Stats/StatsView.svelte` — 4 Chart.js charts
+- [x] 3.7 `src/lib/firebase/config.ts` — init
+- [x] 3.8 `src/lib/firebase/auth.ts` — Google Auth
+- [x] 3.9 `src/lib/firebase/device.ts` — UUID
+- [x] 3.10 `src/lib/firebase/serializer.ts`
+- [x] 3.11 `src/lib/firebase/merge.ts`
+- [x] 3.12 `src/lib/firebase/sync.ts` — upload, download, schedule, listener, backups
+- [x] 3.13 `firebase/serializer.test.ts`
+- [x] 3.14 `firebase/merge.test.ts`
+- [x] 3.15 Wire Firebase in +page.svelte
 
 ## Phase 4: Polish & Component Tests (PR 4)
 

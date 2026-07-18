@@ -3,6 +3,9 @@
 	import BottomNav from '$lib/components/BottomNav.svelte';
 	import Dashboard from '$lib/components/Dashboard/Dashboard.svelte';
 	import DetailsView from '$lib/components/Details/DetailsView.svelte';
+	import RoutinesView from '$lib/components/Routines/RoutinesView.svelte';
+	import HistoryView from '$lib/components/History/HistoryView.svelte';
+	import StatsView from '$lib/components/Stats/StatsView.svelte';
 	import CreateExerciseModal from '$lib/components/Modals/CreateExerciseModal.svelte';
 	import StatInputModal from '$lib/components/Modals/StatInputModal.svelte';
 	import FinishModal from '$lib/components/Modals/FinishModal.svelte';
@@ -37,6 +40,14 @@
 	let worker: Worker | null = null;
 
 	// ============================================================
+	// Firebase & Cloud Sync State
+	// ============================================================
+	let syncStatus = $state<'idle' | 'syncing' | 'synced' | 'error'>('idle');
+	let currentUser = $state<any>(null);
+	let showSyncToast = $state(false);
+	let syncToastTimeout: ReturnType<typeof setTimeout> | null = null;
+
+	// ============================================================
 	// Modal states
 	// ============================================================
 	let showCreateModal = $state(false);
@@ -68,17 +79,17 @@
 	let s = $derived(getState());
 
 	// ============================================================
-	// Worker setup
+	// Worker setup + Firebase init
 	// ============================================================
 	onMount(() => {
 		loadData();
 
+		// Web Worker
 		try {
 			worker = new Worker(new URL('$lib/worker.ts', import.meta.url), { type: 'module' });
 			worker.onmessage = (e: MessageEvent) => {
 				if (e.data === 'tick') {
 					storeOnWorkerTick();
-					// Check for exercise completion after tick
 					if (s.activeExerciseId && s.exerciseRemaining <= 0 && s.isExercisePlaying) {
 						handleExerciseCompletion();
 					}
@@ -93,11 +104,61 @@
 		};
 		window.addEventListener('beforeunload', handleBeforeUnload);
 
+		// ============================================================
+		// Firebase Auth & Sync
+		// ============================================================
+		initFirebase();
+
 		return () => {
 			worker?.terminate();
 			window.removeEventListener('beforeunload', handleBeforeUnload);
 		};
 	});
+
+	async function initFirebase() {
+		try {
+			const { handleRedirectResult, observeAuth } = await import('$lib/firebase/auth.js');
+			const { downloadAndMergeState, startSyncListener, stopSyncListener } = await import(
+				'$lib/firebase/sync.js'
+			);
+
+			// Handle redirect result (mobile flow)
+			await handleRedirectResult();
+
+			// Observe auth state
+			const unsubAuth = observeAuth((user: any) => {
+				currentUser = user;
+
+				if (user) {
+					downloadAndMergeState(user.uid).then(() => {
+						startSyncListener(user.uid, (merged: any) => {
+							import('$lib/state/store.svelte.js').then((mod) => {
+								if (merged.routines) mod.setRoutines(merged.routines);
+								if (merged.stats) mod.setStats(merged.stats);
+								if (merged.sessions) mod.setSessions(merged.sessions);
+								if (merged.currentRoutineId) mod.setCurrentRoutineId(merged.currentRoutineId);
+								mod.saveData(true);
+							});
+						});
+					});
+				} else {
+					stopSyncListener();
+				}
+			});
+
+			// Listen for sync status events
+			window.addEventListener('sync-status', ((e: CustomEvent) => {
+				syncStatus = e.detail.status;
+				showSyncToast = true;
+				if (syncToastTimeout) clearTimeout(syncToastTimeout);
+				syncToastTimeout = setTimeout(() => {
+					showSyncToast = false;
+				}, 3000);
+			}) as EventListener);
+		} catch (err) {
+			console.warn('Firebase init skipped (offline):', err);
+		}
+	}
 
 	// ============================================================
 	// Tab navigation
@@ -153,24 +214,20 @@
 		if (playSound) playBellSound();
 
 		if (ex.currentRep < ex.reps) {
-			// Next repetition
 			ex.currentRep++;
 			setExerciseRemaining(ex.durationSec);
 			ex.remainingSec = ex.durationSec;
-			// Restart worker
 			if (worker) {
 				worker.postMessage('stop');
 				worker.postMessage('start');
 			}
 			saveData();
 		} else {
-			// Exercise completed
 			pauseSequence();
 			ex.completed = true;
 			ex.remainingSec = 0;
 			saveData();
 
-			// Autoplay next exercise
 			if (state.autoplayRoutine) {
 				const routine = getCurrentRoutine();
 				const activeList = routine.exercises.filter((e) => !e.archived);
@@ -265,9 +322,7 @@
 			elapsedSec: state.sessionStartedAt
 				? Math.round((Date.now() - state.sessionStartedAt) / 1000)
 				: 0,
-			startedAt: state.sessionStartedAt
-				? new Date(state.sessionStartedAt).toISOString()
-				: null,
+			startedAt: state.sessionStartedAt ? new Date(state.sessionStartedAt).toISOString() : null,
 			completedAt: new Date().toISOString()
 		};
 		showFinishModal = true;
@@ -286,9 +341,10 @@
 				bpm: ex.bpm,
 				durationSec: ex.durationSec,
 				statName: ex.statisticName || null,
-				statValue: ex.statisticLogs && ex.statisticLogs.length > 0
-					? ex.statisticLogs[ex.statisticLogs.length - 1].value
-					: null,
+				statValue:
+					ex.statisticLogs && ex.statisticLogs.length > 0
+						? ex.statisticLogs[ex.statisticLogs.length - 1].value
+						: null,
 				repsCompleted: ex.reps,
 				comment: ex.comment || ''
 			}));
@@ -314,7 +370,6 @@
 
 		recordProgressSeconds(state.globalSeconds);
 
-		// Reset routine state
 		setSessionStartedAt(null);
 		setActiveExerciseId(null);
 		setExerciseRemaining(0);
@@ -367,12 +422,30 @@
 	}
 
 	// ============================================================
-	// Worker command helpers (for dashboard)
+	// Worker command helpers
 	// ============================================================
 	function dashboardWorkerTick() {
 		storeOnWorkerTick();
 	}
 </script>
+
+<!-- Sync status toast -->
+{#if showSyncToast}
+	<div
+		class="fixed top-4 right-4 z-[9999] px-4 py-2 rounded-lg shadow-lg text-white text-sm transition-all"
+		class:bg-green-500={syncStatus === 'synced'}
+		class:bg-yellow-500={syncStatus === 'syncing'}
+		class:bg-red-500={syncStatus === 'error'}
+	>
+		{#if syncStatus === 'syncing'}
+			<i class="fas fa-sync fa-spin mr-2"></i>Sincronizando...
+		{:else if syncStatus === 'synced'}
+			<i class="fas fa-check-circle mr-2"></i>Sincronizado
+		{:else if syncStatus === 'error'}
+			<i class="fas fa-exclamation-circle mr-2"></i>Error de sincronización
+		{/if}
+	</div>
+{/if}
 
 <!-- Modals -->
 <ImageLightbox show={showLightbox} imageUrl={lightboxUrl} onClose={() => (showLightbox = false)} />
@@ -425,31 +498,22 @@
 		{/if}
 
 	{:else if activeTab === 'routines'}
-		<div class="bg-[#E53935] text-white p-4 pt-6 pb-4 shadow-md sticky top-0 z-20">
-			<h2 class="text-lg font-medium text-center"><i class="fas fa-list mr-2"></i>Rutinas</h2>
-		</div>
-		<div class="p-4 text-center text-gray-400 py-12">
-			<i class="fas fa-list text-4xl block mb-2"></i>
-			<p>Routines view will be implemented in PR 3</p>
-		</div>
+		<RoutinesView />
 
 	{:else if activeTab === 'history'}
-		<div class="bg-[#E53935] text-white p-4 pt-6 pb-4 shadow-md sticky top-0 z-20">
-			<h2 class="text-lg font-medium text-center"><i class="fas fa-history mr-2"></i>Historial</h2>
-		</div>
-		<div class="p-4 text-center text-gray-400 py-12">
-			<i class="fas fa-history text-4xl block mb-2"></i>
-			<p>History view will be implemented in PR 3</p>
-		</div>
+		<HistoryView
+			onEditSession={(id) => {
+				editSessionId = id;
+				showEditSessionModal = true;
+			}}
+		/>
 
 	{:else if activeTab === 'stats'}
-		<div class="bg-[#E53935] text-white p-4 pt-6 pb-4 shadow-md sticky top-0 z-20">
-			<h2 class="text-lg font-medium text-center"><i class="fas fa-chart-line mr-2"></i>Stats</h2>
-		</div>
-		<div class="p-4 text-center text-gray-400 py-12">
-			<i class="fas fa-chart-line text-4xl block mb-2"></i>
-			<p>Stats view will be implemented in PR 3</p>
-		</div>
+		<StatsView
+			onManageData={() => {
+				showEditStatsModal = true;
+			}}
+		/>
 
 	{:else if activeTab === 'settings'}
 		<div class="bg-[#E53935] text-white p-4 pt-6 pb-4 shadow-md sticky top-0 z-20">

@@ -171,6 +171,34 @@ export function setAutoplayRoutine(val: boolean): void {
 	autoplayRoutine = val;
 }
 
+export function setCurrentRoutineId(id: string): void {
+	currentRoutineId = id;
+}
+
+export function setRoutines(val: Routine[]): void {
+	routines = val;
+}
+
+export function setStats(val: Record<string, StatsEntry>): void {
+	stats = val;
+}
+
+export function setSessions(val: Session[]): void {
+	sessions = val;
+}
+
+/**
+ * Switch to a different routine by ID.
+ * Pauses any active exercise before switching.
+ */
+export function switchRoutine(id: string): void {
+	if (isExercisePlaying) {
+		pauseSequence();
+	}
+	currentRoutineId = id;
+	saveData();
+}
+
 export function setBpm(val: number): void {
 	bpm = Math.max(1, Math.min(300, val));
 }

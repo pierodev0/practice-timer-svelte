@@ -144,6 +144,33 @@ export function setExerciseRemaining(sec: number): void {
 	exerciseRemaining = sec;
 }
 
+/**
+ * Set the viewing exercise ID (for details view).
+ */
+export function setViewingExerciseId(id: string | null): void {
+	viewingExerciseId = id;
+}
+
+export function setGlobalSeconds(val: number): void {
+	globalSeconds = val;
+}
+
+export function setSessionStartedAt(val: number | null): void {
+	sessionStartedAt = val;
+}
+
+export function setPendingDetailCompletion(val: boolean): void {
+	pendingDetailCompletion = val;
+}
+
+export function setIsExercisePlaying(val: boolean): void {
+	isExercisePlaying = val;
+}
+
+export function setAutoplayRoutine(val: boolean): void {
+	autoplayRoutine = val;
+}
+
 export function setBpm(val: number): void {
 	bpm = Math.max(1, Math.min(300, val));
 }
@@ -305,12 +332,315 @@ export function resetRoutine(): void {
 	activeExerciseId = null;
 	exerciseRemaining = 0;
 	globalSeconds = 0;
+	isExercisePlaying = false;
+	isAudioOn = false;
 	getCurrentRoutine().exercises.forEach((e) => {
 		e.completed = false;
 		e.remainingSec = e.durationSec;
 		e.currentRep = 1;
 	});
 	saveData();
+}
+
+// ============================================================
+// TIMER & PLAYBACK FUNCTIONS
+// ============================================================
+
+/**
+ * Start playing a specific exercise by ID.
+ */
+export function playExercise(id: string): void {
+	const ex = getExerciseById(id);
+	if (!ex) return;
+
+	// Save remaining time of previously active exercise
+	if (activeExerciseId && activeExerciseId !== id) {
+		const prev = getExerciseById(activeExerciseId);
+		if (prev) prev.remainingSec = exerciseRemaining;
+	}
+
+	activeExerciseId = id;
+	exerciseRemaining = ex.remainingSec <= 0 ? ex.durationSec : ex.remainingSec;
+	setBpm(ex.bpm);
+	isExercisePlaying = true;
+
+	if (sessionStartedAt === null) {
+		sessionStartedAt = Date.now();
+	}
+
+	saveData();
+}
+
+/**
+ * Pause the current sequence (stop timer, audio, save state).
+ */
+export function pauseSequence(): void {
+	if (activeExerciseId) {
+		const ex = getExerciseById(activeExerciseId);
+		if (ex) ex.remainingSec = exerciseRemaining;
+	}
+	isExercisePlaying = false;
+	isAudioOn = false;
+
+	saveData();
+}
+
+/**
+ * Toggle play/pause for a specific exercise in list view.
+ */
+export function toggleListExercise(id: string): void {
+	if (activeExerciseId === id && isExercisePlaying) {
+		pauseSequence();
+	} else {
+		playExercise(id);
+	}
+}
+
+/**
+ * Toggle global audio-only mode (metronome on/off without affecting timer).
+ */
+export function toggleGlobalAudioOnly(): void {
+	isAudioOn = !isAudioOn;
+}
+
+/**
+ * Worker tick handler — called every second from the Web Worker.
+ */
+export function onWorkerTick(): void {
+	if (!isExercisePlaying) return;
+
+	globalSeconds++;
+
+	if (activeExerciseId && exerciseRemaining > 0) {
+		exerciseRemaining--;
+		const ex = getExerciseById(activeExerciseId);
+		if (ex) ex.remainingSec = exerciseRemaining;
+	}
+}
+
+// ============================================================
+// NEW EXERCISE FORM FUNCTIONS
+// ============================================================
+
+/**
+ * Add a new exercise to the current routine from the form state.
+ */
+export function addNewExercise(title: string): void {
+	const total = newExerciseForm.min * 60 + newExerciseForm.sec;
+	const newExercise: Exercise = {
+		id: nanoid(),
+		title,
+		bpm: newExerciseForm.bpm,
+		durationSec: total,
+		remainingSec: total,
+		completed: false,
+		autoStart: true,
+		archived: false,
+		reps: newExerciseForm.reps,
+		currentRep: 1,
+		statisticName: null,
+		statisticLogs: [],
+		comment: ''
+	};
+
+	getCurrentRoutine().exercises.push(newExercise);
+	saveData();
+}
+
+export function adjustNewBPM(delta: number): void {
+	newExerciseForm.bpm = Math.max(1, newExerciseForm.bpm + delta);
+}
+
+export function adjustNewReps(delta: number): void {
+	newExerciseForm.reps = Math.max(1, newExerciseForm.reps + delta);
+}
+
+export function adjustNewTime(type: 'min' | 'sec', val: number): void {
+	if (type === 'min') {
+		newExerciseForm.min = Math.max(0, newExerciseForm.min + val);
+	} else {
+		newExerciseForm.sec = Math.max(0, newExerciseForm.sec + val);
+	}
+}
+
+// ============================================================
+// DETAILS VIEW FUNCTIONS
+// ============================================================
+
+/**
+ * Close the details view by clearing viewingExerciseId.
+ */
+export function closeDetailsView(): void {
+	viewingExerciseId = null;
+}
+
+/**
+ * Update the title of the currently viewed exercise.
+ */
+export function updateExerciseTitle(newTitle: string): void {
+	if (!viewingExerciseId) return;
+	const ex = getExerciseById(viewingExerciseId);
+	if (ex) {
+		ex.title = newTitle;
+		saveData();
+	}
+}
+
+/**
+ * Update the statistic name of the currently viewed exercise.
+ */
+export function updateDetailStatName(newVal: string): void {
+	if (!viewingExerciseId) return;
+	const ex = getExerciseById(viewingExerciseId);
+	if (ex) {
+		ex.statisticName = newVal.trim() === '' ? null : newVal;
+		saveData();
+	}
+}
+
+/**
+ * Adjust the BPM of the currently viewed exercise by delta.
+ */
+export function adjustDetailBPM(delta: number): void {
+	if (!viewingExerciseId) return;
+	const ex = getExerciseById(viewingExerciseId);
+	if (!ex) return;
+	ex.bpm = Math.max(1, ex.bpm + delta);
+	if (activeExerciseId === ex.id) {
+		setBpm(ex.bpm);
+	}
+	saveData();
+}
+
+/**
+ * Update the auto-start setting of the currently viewed exercise.
+ */
+export function updateDetailAutoStart(checked: boolean): void {
+	if (!viewingExerciseId) return;
+	const ex = getExerciseById(viewingExerciseId);
+	if (!ex) return;
+	ex.autoStart = checked;
+	saveData();
+}
+
+/**
+ * Adjust reps of the currently viewed exercise by delta.
+ */
+export function adjustDetailReps(delta: number): void {
+	if (!viewingExerciseId) return;
+	const ex = getExerciseById(viewingExerciseId);
+	if (!ex) return;
+	ex.reps = Math.max(1, ex.reps + delta);
+	if (ex.currentRep > ex.reps) ex.currentRep = 1;
+	saveData();
+}
+
+/**
+ * Adjust time (minutes or seconds) of the currently viewed exercise.
+ */
+export function adjustDetailTime(type: 'min' | 'sec', val: number): void {
+	if (!viewingExerciseId) return;
+	const ex = getExerciseById(viewingExerciseId);
+	if (!ex) return;
+	let total = ex.durationSec;
+	if (type === 'min') total = Math.max(0, total + val * 60);
+	else total = Math.max(0, total + val);
+	ex.durationSec = total;
+	ex.remainingSec = total;
+	saveData();
+}
+
+/**
+ * Update the comment of the currently viewed exercise.
+ */
+export function updateComment(text: string): void {
+	if (!viewingExerciseId) return;
+	const ex = getExerciseById(viewingExerciseId);
+	if (ex) {
+		ex.comment = text;
+		saveData();
+	}
+}
+
+/**
+ * Toggle play/pause from the details view.
+ */
+export function toggleDetailPlay(): void {
+	if (activeExerciseId === viewingExerciseId && isExercisePlaying) {
+		pauseSequence();
+	} else if (viewingExerciseId) {
+		playExercise(viewingExerciseId);
+	}
+}
+
+/**
+ * Reset the currently viewed exercise (clear completed, remaining, reps).
+ */
+export function resetCurrentDetailExercise(): void {
+	const s = viewingExerciseId ? getExerciseById(viewingExerciseId) : null;
+	if (!s) return;
+
+	if (s.completed) {
+		const d = s.durationSec;
+		globalSeconds = Math.max(0, globalSeconds - d);
+	}
+
+	s.remainingSec = s.durationSec;
+	s.completed = false;
+	s.currentRep = 1;
+
+	if (activeExerciseId === s.id) {
+		pauseSequence();
+		exerciseRemaining = s.durationSec;
+	}
+
+	saveData();
+}
+
+/**
+ * Duplicate the currently viewed exercise and insert copy after it.
+ */
+export function duplicateExercise(): void {
+	if (!viewingExerciseId) return;
+	const original = getExerciseById(viewingExerciseId);
+	if (!original) return;
+	const copy: Exercise = JSON.parse(JSON.stringify(original));
+	copy.id = nanoid();
+	copy.title += ' (Copy)';
+	copy.statisticLogs = [];
+	copy.completed = false;
+	copy.remainingSec = copy.durationSec;
+	copy.currentRep = 1;
+	const routine = getCurrentRoutine();
+	const idx = routine.exercises.findIndex((e) => e.id === original.id);
+	routine.exercises.splice(idx + 1, 0, copy);
+	saveData();
+	closeDetailsView();
+}
+
+/**
+ * Archive the currently viewed exercise.
+ */
+export function archiveExercise(): void {
+	if (!viewingExerciseId) return;
+	const ex = getExerciseById(viewingExerciseId);
+	if (!ex) return;
+	ex.archived = true;
+	saveData();
+	closeDetailsView();
+}
+
+/**
+ * Delete the currently viewed exercise from the routine.
+ */
+export function deleteDetailExercise(): void {
+	const routine = getCurrentRoutine();
+	const idx = routine.exercises.findIndex((e) => e.id === viewingExerciseId);
+	if (idx !== -1) {
+		routine.exercises.splice(idx, 1);
+		saveData();
+		closeDetailsView();
+	}
 }
 
 // --- Persistence ---

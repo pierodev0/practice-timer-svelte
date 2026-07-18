@@ -82,6 +82,10 @@
 		onclick={(e) => {
 			if (e.target === e.currentTarget) onClose();
 		}}
+		onkeydown={(e) => {
+			if (e.key === 'Escape') onClose();
+		}}
+		role="presentation"
 	>
 		<div class="bg-gray-50 rounded-2xl shadow-2xl w-full max-w-md max-h-[80vh] flex flex-col overflow-hidden">
 			<!-- Header -->
@@ -103,7 +107,7 @@
 				{#if allLogs.length === 0}
 					<div class="text-center text-gray-400 py-8">No statistics recorded yet.</div>
 				{:else}
-					{#each allLogs as item}
+					{#each allLogs as item (item.routineId + item.exerciseId + item.index)}
 						<div class="bg-white p-3 rounded shadow-sm border border-gray-100 flex justify-between items-center">
 							<div>
 								<div class="text-xs text-gray-400 font-bold">{item.date}</div>

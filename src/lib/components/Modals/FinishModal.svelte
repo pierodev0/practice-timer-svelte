@@ -33,6 +33,10 @@
 		onclick={(e) => {
 			if (e.target === e.currentTarget) onCancel();
 		}}
+		onkeydown={(e) => {
+			if (e.key === 'Escape') onCancel();
+		}}
+		role="presentation"
 	>
 		<div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden">
 			<!-- Header -->

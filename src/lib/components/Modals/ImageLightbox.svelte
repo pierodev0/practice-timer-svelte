@@ -17,6 +17,10 @@
 		onclick={(e) => {
 			if (e.target === e.currentTarget) onClose();
 		}}
+		onkeydown={(e) => {
+			if (e.key === 'Escape') onClose();
+		}}
+		role="presentation"
 	>
 		<button
 			type="button"

@@ -18,8 +18,8 @@ const provider = new GoogleAuthProvider();
 export async function loginGoogle(): Promise<UserCredential | null> {
 	try {
 		return await signInWithPopup(auth, provider);
-	} catch (err: any) {
-		if (err.code === 'auth/popup-blocked') {
+	} catch (err) {
+		if ((err as { code?: string }).code === 'auth/popup-blocked') {
 			await signInWithRedirect(auth, provider);
 			return null;
 		}

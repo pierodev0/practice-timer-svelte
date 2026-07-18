@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unused-vars, no-empty */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 // Mocks hoisted — persist across resetModules

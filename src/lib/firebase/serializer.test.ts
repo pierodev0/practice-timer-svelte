@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, expect } from 'vitest';
 import { exportSyncState, importSyncState } from './serializer.js';
 import type { Routine, Session, StatsEntry } from '../state/types.js';

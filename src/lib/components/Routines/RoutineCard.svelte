@@ -139,7 +139,6 @@
 				<i class="fas fa-ellipsis-v"></i>
 			</button>
 			{#if menuOpen}
-				<!-- svelte-ignore a11y_no_static_element_interactions -->
 				<div
 					class="absolute right-0 bg-white rounded-lg shadow-lg border border-gray-200 py-1 min-w-[170px] z-50"
 					class:dropdown-up={menuUp}

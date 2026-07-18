@@ -1,6 +1,4 @@
 <script lang="ts">
-	import { getFirstImage } from '$lib/state/utils.js';
-
 	let {
 		comment = '',
 		onImageClick = (_url: string) => {}
@@ -24,7 +22,7 @@
 
 {#if images.length > 0}
 	<div id="detail-image-preview" class="flex flex-wrap gap-2 mt-2">
-		{#each images as imgUrl}
+		{#each images as imgUrl (imgUrl)}
 			<button type="button" onclick={() => onImageClick(imgUrl)} aria-label="View image" class="p-0">
 				<img
 					src={imgUrl}
@@ -41,16 +39,15 @@
 
 {#if allLinks.length > 0}
 	<div id="detail-link-list" class="flex flex-col gap-1 mt-2">
-		{#each allLinks as url}
-			<a
-				href={url}
-				target="_blank"
-				rel="noopener noreferrer"
+		{#each allLinks as url (url)}
+			<button
+				type="button"
+				onclick={() => window.open(url, '_blank')}
 				class="flex items-center gap-2 text-[#E53935] hover:underline bg-red-50 p-2 rounded text-sm w-fit max-w-full truncate"
 			>
 				<i class="fas fa-link"></i>
 				<span class="truncate">{url}</span>
-			</a>
+			</button>
 		{/each}
 	</div>
 {/if}

@@ -57,6 +57,10 @@
 		onclick={(e) => {
 			if (e.target === e.currentTarget) onClose();
 		}}
+		onkeydown={(e) => {
+			if (e.key === 'Escape') onClose();
+		}}
+		role="presentation"
 	>
 		<div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden">
 			<!-- Header -->
@@ -77,7 +81,7 @@
 			<div class="p-5 space-y-4">
 				<!-- Date -->
 				<div>
-					<label class="text-xs text-gray-400 font-bold uppercase tracking-wide mb-1 block">
+					<label for="edit-session-date" class="text-xs text-gray-400 font-bold uppercase tracking-wide mb-1 block">
 						Date
 					</label>
 					<input
@@ -90,36 +94,36 @@
 
 				<!-- Routine name (read-only) -->
 				<div>
-					<label class="text-xs text-gray-400 font-bold uppercase tracking-wide mb-1 block">
+					<span class="text-xs text-gray-400 font-bold uppercase tracking-wide mb-1 block">
 						Routine
-					</label>
+					</span>
 					<p id="edit-session-routine" class="text-gray-800 font-medium">{session.routineName}</p>
 				</div>
 
 				<div class="grid grid-cols-2 gap-3">
 					<!-- Scheduled time -->
 					<div>
-						<label class="text-xs text-gray-400 font-bold uppercase tracking-wide mb-1 block">
+						<span class="text-xs text-gray-400 font-bold uppercase tracking-wide mb-1 block">
 							Scheduled
-						</label>
+						</span>
 						<p id="edit-session-scheduled" class="text-gray-800 font-medium tabular-nums">{fmt(session.scheduledSec)}</p>
 					</div>
 					<!-- Elapsed time -->
 					<div>
-						<label class="text-xs text-gray-400 font-bold uppercase tracking-wide mb-1 block">
+						<span class="text-xs text-gray-400 font-bold uppercase tracking-wide mb-1 block">
 							Elapsed
-						</label>
+						</span>
 						<p id="edit-session-elapsed" class="text-gray-800 font-medium tabular-nums">{fmt(session.elapsedSec || session.totalSec)}</p>
 					</div>
 				</div>
 
 				<!-- Exercises -->
 				<div>
-					<label class="text-xs text-gray-400 font-bold uppercase tracking-wide mb-1 block">
+					<span class="text-xs text-gray-400 font-bold uppercase tracking-wide mb-1 block">
 						Exercises
-					</label>
+					</span>
 					<div id="edit-session-exercises" class="space-y-1">
-						{#each session.exercises as ex}
+						{#each session.exercises as ex (ex.exerciseId + ex.title)}
 							<div class="flex items-center gap-2 text-sm text-gray-600">
 								<i class="fas fa-check-circle text-green-500 text-[10px]"></i>
 								<span>{ex.title}</span>

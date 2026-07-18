@@ -12,6 +12,13 @@
 	} = $props();
 
 	let inputValue = $state('');
+	let inputEl: HTMLInputElement | undefined = $state();
+
+	$effect(() => {
+		if (show && inputEl) {
+			inputEl.focus();
+		}
+	});
 
 	function handleSave() {
 		const val = parseFloat(inputValue);
@@ -38,6 +45,10 @@
 		onclick={(e) => {
 			if (e.target === e.currentTarget) handleSkip();
 		}}
+		onkeydown={(e) => {
+			if (e.key === 'Escape') handleSkip();
+		}}
+		role="presentation"
 	>
 		<div class="bg-white rounded-2xl shadow-2xl w-full max-w-xs overflow-hidden">
 			<!-- Header -->
@@ -56,7 +67,7 @@
 					placeholder="0"
 					bind:value={inputValue}
 					onkeydown={handleKeydown}
-				autofocus={true}
+					bind:this={inputEl}
 			/>
 			</div>
 

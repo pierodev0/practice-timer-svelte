@@ -1,32 +1,27 @@
 <script lang="ts">
 	import { loginGoogle, logoutGoogle } from '$lib/firebase/auth.js';
 	import { syncNow, scheduleCloudSync } from '$lib/firebase/sync.js';
+	import { modal } from '$lib/state/modal-store.svelte.js';
 
-	let {
-		currentUser = null,
-		syncStatus = 'idle',
-		lastSyncTime = 'nunca'
-	}: {
-		currentUser: any;
-		syncStatus: string;
-		lastSyncTime: string;
-	} = $props();
+	let currentUser = $derived(modal.currentUser);
+	let syncStatus = $derived(modal.syncStatus);
+	let lastSyncTime = $derived(modal.lastSyncTime);
 
 	async function handleLogin() {
 		try {
 			await loginGoogle();
-		} catch (err: any) {
+		} catch (err) {
 			console.error('Login failed:', err);
-			alert('Error al iniciar sesión: ' + (err.message || 'Desconocido'));
+			alert('Error al iniciar sesión: ' + (err instanceof Error ? err.message : 'Desconocido'));
 		}
 	}
 
 	async function handleSyncNow() {
 		try {
 			await syncNow();
-		} catch (err: any) {
+		} catch (err) {
 			console.error('Sync failed:', err);
-			alert('Error al sincronizar: ' + (err.message || 'Desconocido'));
+			alert('Error al sincronizar: ' + (err instanceof Error ? err.message : 'Desconocido'));
 		}
 	}
 
@@ -40,7 +35,7 @@
 	async function handleLogout() {
 		try {
 			await logoutGoogle();
-		} catch (err: any) {
+		} catch (err) {
 			console.error('Logout failed:', err);
 		}
 	}

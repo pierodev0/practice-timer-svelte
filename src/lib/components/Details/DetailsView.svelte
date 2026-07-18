@@ -147,7 +147,7 @@
 		<div class="flex-1 overflow-y-auto px-4 pt-4 pb-4">
 			<!-- Title -->
 			<div class="mb-4">
-				<label class="text-xs text-gray-400 font-bold uppercase tracking-wide mb-1 block">
+				<label for="detail-title-input" class="text-xs text-gray-400 font-bold uppercase tracking-wide mb-1 block">
 					Title
 				</label>
 				<input
@@ -161,7 +161,7 @@
 
 			<!-- Stat name -->
 			<div class="mb-4">
-				<label class="text-xs text-gray-400 font-bold uppercase tracking-wide mb-1 block">
+				<label for="detail-stat-name-input" class="text-xs text-gray-400 font-bold uppercase tracking-wide mb-1 block">
 					Statistic Name
 				</label>
 				<input
@@ -178,9 +178,9 @@
 			<div class="grid grid-cols-2 gap-3 mb-4">
 				<!-- Reps -->
 				<div class="bg-white rounded-xl border border-gray-200 p-3">
-					<label class="text-xs text-gray-400 font-bold uppercase tracking-wide mb-2 block">
+					<span class="text-xs text-gray-400 font-bold uppercase tracking-wide mb-2 block">
 						Reps
-					</label>
+					</span>
 					<div class="flex items-center justify-between">
 						<button
 							type="button"
@@ -206,9 +206,9 @@
 
 				<!-- Minutes -->
 				<div class="bg-white rounded-xl border border-gray-200 p-3">
-					<label class="text-xs text-gray-400 font-bold uppercase tracking-wide mb-2 block">
+					<span class="text-xs text-gray-400 font-bold uppercase tracking-wide mb-2 block">
 						Minutes
-					</label>
+					</span>
 					<div class="flex items-center justify-between">
 						<button
 							type="button"
@@ -236,9 +236,9 @@
 
 				<!-- Seconds -->
 				<div class="bg-white rounded-xl border border-gray-200 p-3">
-					<label class="text-xs text-gray-400 font-bold uppercase tracking-wide mb-2 block">
+					<span class="text-xs text-gray-400 font-bold uppercase tracking-wide mb-2 block">
 						Seconds
-					</label>
+					</span>
 					<div class="flex items-center justify-between">
 						<button
 							type="button"
@@ -266,9 +266,9 @@
 
 				<!-- BPM -->
 				<div class="bg-white rounded-xl border border-gray-200 p-3">
-					<label class="text-xs text-gray-400 font-bold uppercase tracking-wide mb-2 block">
+					<span class="text-xs text-gray-400 font-bold uppercase tracking-wide mb-2 block">
 						BPM
-					</label>
+					</span>
 					<div class="flex items-center justify-between">
 						<button
 							type="button"
@@ -309,7 +309,7 @@
 
 			<!-- Comment -->
 			<div class="mb-4">
-				<label class="text-xs text-gray-400 font-bold uppercase tracking-wide mb-1 block">
+				<label for="detail-comment" class="text-xs text-gray-400 font-bold uppercase tracking-wide mb-1 block">
 					Comment / Notes
 				</label>
 				<textarea
@@ -324,9 +324,9 @@
 
 			<!-- Attachments -->
 			<div class="mb-4">
-				<label class="text-xs text-gray-400 font-bold uppercase tracking-wide mb-1 block">
+				<span class="text-xs text-gray-400 font-bold uppercase tracking-wide mb-1 block">
 					Attachments
-				</label>
+				</span>
 				<AttachmentList comment={ex.comment} onImageClick={onLightbox} />
 			</div>
 

@@ -41,8 +41,8 @@
 				return;
 			}
 			backups = await listBackups(user.uid);
-		} catch (err: any) {
-			error = err.message || 'Error al cargar copias';
+		} catch (err) {
+			error = err instanceof Error ? err.message : 'Error al cargar copias';
 		} finally {
 			loading = false;
 		}
@@ -59,8 +59,8 @@
 			await saveBackup(user.uid, label?.trim() || undefined);
 			alert('Copia guardada en la nube.');
 			await loadBackups();
-		} catch (err: any) {
-			alert('Error al guardar: ' + (err.message || 'Desconocido'));
+		} catch (err) {
+			alert('Error al guardar: ' + (err instanceof Error ? err.message : 'Desconocido'));
 		}
 	}
 
@@ -97,7 +97,7 @@
 			mod.setGlobalSeconds(0);
 
 			const routine = getCurrentRoutine();
-			routine.exercises.forEach((e: any) => {
+			routine.exercises.forEach((e) => {
 				e.completed = false;
 				e.remainingSec = e.durationSec;
 				e.currentRep = 1;
@@ -106,8 +106,8 @@
 			mod.saveData();
 			alert('Copia restaurada correctamente.');
 			onClose();
-		} catch (err: any) {
-			alert('Error al restaurar: ' + (err.message || 'Desconocido'));
+		} catch (err) {
+			alert('Error al restaurar: ' + (err instanceof Error ? err.message : 'Desconocido'));
 		}
 	}
 
@@ -122,8 +122,8 @@
 				return;
 			}
 			downloadJSON(JSON.stringify(backup.data, null, 2), `backup_${backupId}.json`);
-		} catch (err: any) {
-			alert('Error al exportar: ' + (err.message || 'Desconocido'));
+		} catch (err) {
+			alert('Error al exportar: ' + (err instanceof Error ? err.message : 'Desconocido'));
 		}
 	}
 
@@ -135,8 +135,8 @@
 
 			await deleteBackup(user.uid, backupId);
 			await loadBackups();
-		} catch (err: any) {
-			alert('Error al eliminar: ' + (err.message || 'Desconocido'));
+		} catch (err) {
+			alert('Error al eliminar: ' + (err instanceof Error ? err.message : 'Desconocido'));
 		}
 	}
 </script>

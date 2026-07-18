@@ -44,6 +44,10 @@
 		onclick={(e) => {
 			if (e.target === e.currentTarget) handleCancel();
 		}}
+		onkeydown={(e) => {
+			if (e.key === 'Escape') handleCancel();
+		}}
+		role="presentation"
 	>
 		<div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden">
 			<!-- Header -->
@@ -55,7 +59,7 @@
 			<div class="p-5 space-y-4">
 				<!-- Title -->
 				<div>
-					<label class="text-xs text-gray-400 font-bold uppercase tracking-wide mb-1 block">
+					<label for="new-title" class="text-xs text-gray-400 font-bold uppercase tracking-wide mb-1 block">
 						Title *
 					</label>
 					<input
@@ -69,7 +73,7 @@
 
 				<!-- Stat name -->
 				<div>
-					<label class="text-xs text-gray-400 font-bold uppercase tracking-wide mb-1 block">
+					<label for="new-stat-name" class="text-xs text-gray-400 font-bold uppercase tracking-wide mb-1 block">
 						Statistic Name (optional)
 					</label>
 					<input
@@ -85,9 +89,9 @@
 				<div class="grid grid-cols-2 gap-3">
 					<!-- Reps -->
 					<div class="bg-gray-50 rounded-xl p-3 border border-gray-100">
-						<label class="text-xs text-gray-400 font-bold uppercase tracking-wide mb-2 block">
+						<span class="text-xs text-gray-400 font-bold uppercase tracking-wide mb-2 block">
 							Reps
-						</label>
+						</span>
 						<div class="flex items-center justify-between">
 							<button
 								type="button"
@@ -113,9 +117,9 @@
 
 					<!-- BPM -->
 					<div class="bg-gray-50 rounded-xl p-3 border border-gray-100">
-						<label class="text-xs text-gray-400 font-bold uppercase tracking-wide mb-2 block">
+						<span class="text-xs text-gray-400 font-bold uppercase tracking-wide mb-2 block">
 							BPM
-						</label>
+						</span>
 						<div class="flex items-center justify-between">
 							<button
 								type="button"
@@ -141,9 +145,9 @@
 
 					<!-- Minutes -->
 					<div class="bg-gray-50 rounded-xl p-3 border border-gray-100">
-						<label class="text-xs text-gray-400 font-bold uppercase tracking-wide mb-2 block">
+						<span class="text-xs text-gray-400 font-bold uppercase tracking-wide mb-2 block">
 							Minutes
-						</label>
+						</span>
 						<div class="flex items-center justify-between">
 							<button
 								type="button"
@@ -169,9 +173,9 @@
 
 					<!-- Seconds -->
 					<div class="bg-gray-50 rounded-xl p-3 border border-gray-100">
-						<label class="text-xs text-gray-400 font-bold uppercase tracking-wide mb-2 block">
+						<span class="text-xs text-gray-400 font-bold uppercase tracking-wide mb-2 block">
 							Seconds
-						</label>
+						</span>
 						<div class="flex items-center justify-between">
 							<button
 								type="button"

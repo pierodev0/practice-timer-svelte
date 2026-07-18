@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /**
  * Audio module — Tone.js metronome and bell completion sound.
  *

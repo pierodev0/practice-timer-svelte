@@ -84,6 +84,7 @@ export async function uploadState(uid: string): Promise<void> {
 /**
  * Download state from Firestore.
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export async function downloadState(uid: string): Promise<any | null> {
 	const snap = await getDoc(getDocRef(uid));
 	if (!snap.exists()) return null;
@@ -210,9 +211,10 @@ export function startSyncListener(
 ): (() => void) | undefined {
 	if (unsubscribeSnapshot) return;
 
-	unsubscribeSnapshot = onSnapshot(getDocRef(uid), (snap) => {
+	unsubscribeSnapshot =		onSnapshot(getDocRef(uid), (snap) => {
 		if (!snap.exists()) return;
-		const data = snap.data();
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
+		const data = snap.data() as any;
 
 		// Skip snapshots triggered by our own writes
 		if (data.deviceId === getDeviceId()) return;
@@ -283,6 +285,7 @@ export async function listBackups(uid: string): Promise<
 /**
  * Load a specific backup by ID.
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export async function loadBackup(uid: string, backupId: string): Promise<any | null> {
 	const snap = await getDoc(getBackupDocRef(uid, backupId));
 	if (!snap.exists()) return null;

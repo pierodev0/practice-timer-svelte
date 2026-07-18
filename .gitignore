@@ -25,3 +25,6 @@ vite.config.ts.timestamp-*
 .atl/
 .codegraph/
 # old-app/
+.claude/
+.playwright-cli/
+*.yml

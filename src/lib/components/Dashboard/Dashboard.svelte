@@ -1,7 +1,6 @@
 <script lang="ts">
-	import { onMount, onDestroy } from 'svelte';
-	import { getState, getCurrentRoutine, getVisibleExercises, adjustBpm, toggleGlobalAudioOnly, toggleListExercise, pauseSequence, saveData } from '$lib/state/store.svelte.js';
-	import { formatTime } from '$lib/state/utils.js';
+	import { onMount } from 'svelte';
+	import { getState, getCurrentRoutine, getVisibleExercises, adjustBpm, toggleGlobalAudioOnly, toggleListExercise, saveData } from '$lib/state/store.svelte.js';
 	import TimerBar from './TimerBar.svelte';
 	import ExerciseCard from './ExerciseCard.svelte';
 	// SortableInstance is globally declared in app.d.ts
@@ -11,15 +10,13 @@
 		onReset = () => {},
 		onCreateExercise = () => {},
 		onDetail = (_id: string) => {},
-		onLightbox = (_url: string) => {},
-		onWorkerTick: externalWorkerTick = () => {}
+		onLightbox = (_url: string) => {}
 	}: {
 		onFinish: () => void;
 		onReset: () => void;
 		onCreateExercise: () => void;
-		onDetail: (id: string) => void;
-		onLightbox: (url: string) => void;
-		onWorkerTick: () => void;
+		onDetail: (_id: string) => void;
+		onLightbox: (_url: string) => void;
 	} = $props();
 
 	let s = $derived(getState());
@@ -171,7 +168,7 @@
 
 	<!-- Exercise list -->
 	<div id="exercise-list" bind:this={exerciseListEl} class="flex-1 overflow-y-auto px-4 pt-4 pb-24">
-		{#each visibleExercises as ex, i (ex.id)}
+		{#each visibleExercises as ex (ex.id)}
 			<ExerciseCard
 				exercise={ex}
 				isActive={ex.id === s.activeExerciseId}

@@ -1,17 +1,24 @@
 <script lang="ts">
 	import { onMount, onDestroy } from 'svelte';
 	import { getState } from '$lib/state/store.svelte.js';
-	import { stringToColor, todayStr, formatDate } from '$lib/state/utils.js';
-	import { subDays, differenceInCalendarDays } from 'date-fns';
-	import StatCard from './StatCard.svelte';
+	import { calcTotalSeconds, calcPracticedStr, calcSessionsCount, calcAvgMinutes, calcStreak } from '$lib/state/stats-ops.js';
+	import { stringToColor, formatDate } from '$lib/state/utils.js';
+	import { subDays } from 'date-fns';
+	import StatCard from '$lib/components/Stats/StatCard.svelte';
+
+	import { openEditStatsModal } from '$lib/state/modal-store.svelte.js';
 
 	let s = $derived(getState());
 
-	// Chart instances
-	let weeklyChartInstance: any = null;
-	let routineChartInstance: any = null;
-	let progressChartInstance: any = null;
-	let scheduleChartInstance: any = null;
+	// Chart instances (Chart.js loaded via CDN, no types available)
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
+	let weeklyChartInstance: any = $state(null);
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
+	let routineChartInstance: any = $state(null);
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
+	let progressChartInstance: any = $state(null);
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
+	let scheduleChartInstance: any = $state(null);
 
 	// Canvas refs
 	let weeklyCanvas: HTMLCanvasElement;
@@ -23,15 +30,18 @@
 	let filterStart = $state('');
 	let filterEnd = $state('');
 
-	// Events
-	let {
-		onManageData = () => {}
-	}: {
-		onManageData: () => void;
-	} = $props();
+	// ============================================================
+	// Summary calculations (via extracted helpers)
+	// ============================================================
+
+	let totalSecondsAllTime = $derived(calcTotalSeconds(s.stats));
+	let totalPracticedStr = $derived(calcPracticedStr(totalSecondsAllTime));
+	let sessionsCount = $derived(calcSessionsCount(s.stats));
+	let avgMinutes = $derived(calcAvgMinutes(totalSecondsAllTime, sessionsCount));
+	let streak = $derived(calcStreak(s.stats));
 
 	onMount(() => {
-		renderStats();
+		// no-op: charts are rendered via $effect
 	});
 
 	onDestroy(() => {
@@ -39,55 +49,6 @@
 		routineChartInstance?.destroy();
 		progressChartInstance?.destroy();
 		scheduleChartInstance?.destroy();
-	});
-
-	function renderStats() {
-		const state = s;
-		const entries = Object.entries(state.stats);
-
-		// Summary calculations are done via $derived
-	}
-
-	// ============================================================
-	// Summary calculations
-	// ============================================================
-
-	let totalSecondsAllTime = $derived.by(() => {
-		return Object.entries(s.stats).reduce((acc, [_, data]) => acc + (data.totalSec || 0), 0);
-	});
-
-	let totalHours = $derived(Math.floor(totalSecondsAllTime / 3600));
-	let totalMinutes = $derived(Math.floor((totalSecondsAllTime % 3600) / 60));
-	let totalPracticedStr = $derived(
-		totalHours > 0 ? `${totalHours}h ${totalMinutes}m` : `${totalMinutes}m`
-	);
-
-	let sortedDateKeys = $derived(Object.keys(s.stats).sort());
-	let sessionsCount = $derived(sortedDateKeys.length);
-
-	let avgMinutes = $derived(
-		sessionsCount > 0 ? Math.round(totalSecondsAllTime / 60 / sessionsCount) : 0
-	);
-
-	let streak = $derived.by(() => {
-		if (sortedDateKeys.length === 0) return 0;
-		const today = todayStr();
-		const yesterdayStr = formatDate(subDays(new Date(), 1));
-		const lastDateStr = sortedDateKeys[sortedDateKeys.length - 1];
-
-		if (lastDateStr === today || lastDateStr === yesterdayStr) {
-			let count = 1;
-			for (let i = sortedDateKeys.length - 2; i >= 0; i--) {
-				const diff = differenceInCalendarDays(
-					new Date(sortedDateKeys[i + 1]),
-					new Date(sortedDateKeys[i])
-				);
-				if (diff === 1) count++;
-				else break;
-			}
-			return count;
-		}
-		return 0;
 	});
 
 	// ============================================================
@@ -105,7 +66,7 @@
 			last7DaysLabels.push(d.toLocaleDateString('en-US', { weekday: 'short' }));
 		}
 
-		const uniqueRoutines = new Set<string>();
+		const uniqueRoutines = new Set<string>(); // eslint-disable-line svelte/prefer-svelte-reactivity
 		last7DaysKeys.forEach((k) => {
 			if (s.stats[k]?.routines) {
 				Object.keys(s.stats[k].routines).forEach((r) => uniqueRoutines.add(r));
@@ -152,10 +113,10 @@
 
 		const entries = Object.entries(s.stats);
 		const routineTotals: Record<string, number> = {};
-		entries.forEach(([_, d]) => {
+		entries.forEach(([, d]) => {
 			if (d.routines) {
 				Object.entries(d.routines).forEach(([name, secs]) => {
-					routineTotals[name] = (routineTotals[name] || 0) + secs;
+					routineTotals[name] = (routineTotals[name] || 0) + (secs as number);
 				});
 			}
 		});
@@ -191,7 +152,7 @@
 	function renderProgressChart() {
 		if (!progressCanvas) return;
 
-		let allStats: Array<{ name: string; logs: Array<{ date: string; value: number }> }> = [];
+		const allStats: Array<{ name: string; logs: Array<{ date: string; value: number }> }> = [];
 		s.routines.forEach((r) => {
 			r.exercises.forEach((e) => {
 				if (e.statisticLogs && e.statisticLogs.length > 0) {
@@ -206,7 +167,7 @@
 		const startVal = filterStart || '';
 		const endVal = filterEnd || '';
 
-		let uniqueDates = new Set<string>();
+		const uniqueDates = new Set<string>(); // eslint-disable-line svelte/prefer-svelte-reactivity
 		allStats.forEach((stat) => {
 			stat.logs.forEach((log) => {
 				if (
@@ -291,7 +252,7 @@
 			(d) => Math.round((days[d].elapsed || 0) / 60)
 		);
 		const labels = sortedDates.map((d) => {
-			const [y, m, day] = d.split('-');
+			const [, m, day] = d.split('-');
 			return `${Number(day)}/${m}`;
 		});
 
@@ -328,7 +289,7 @@
 					},
 					tooltip: {
 						callbacks: {
-							label: (ctx: any) =>
+							label: (ctx: { dataset: { label: string }; parsed: { y: number } }) =>
 								`${ctx.dataset.label}: ${ctx.parsed.y}min`
 						}
 					}
@@ -362,9 +323,7 @@
 	// Effect to re-render charts when data changes
 	$effect(() => {
 		// Access reactive dependencies to trigger re-render
-		const _ = s.stats;
-		const __ = s.sessions;
-		const ___ = s.routines;
+		void (s.stats && s.sessions && s.routines);
 		if (weeklyCanvas && routineCanvas && progressCanvas && scheduleCanvas) {
 			renderAllCharts();
 		}
@@ -425,6 +384,7 @@
 			<button
 				onclick={applyFilter}
 				class="text-xs bg-[#E53935] text-white px-2 py-1 rounded hover:bg-red-700 transition-colors"
+				aria-label="Aplicar filtro"
 			>
 				<i class="fas fa-filter"></i>
 			</button>
@@ -448,7 +408,7 @@
 <!-- Manage data button -->
 <div class="p-4 pt-0">
 	<button
-		onclick={onManageData}
+		onclick={openEditStatsModal}
 		class="w-full py-2.5 rounded-lg border border-gray-200 text-sm text-gray-500 hover:bg-gray-50 transition-colors"
 	>
 		<i class="fas fa-database mr-1"></i>Gestionar Datos

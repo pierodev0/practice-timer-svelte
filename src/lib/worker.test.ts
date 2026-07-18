@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unused-vars, no-empty */
 import { describe, it, expect, vi, beforeEach, afterEach, beforeAll } from 'vitest';
 
 let onmessageHandler: ((e: MessageEvent) => void) | null;

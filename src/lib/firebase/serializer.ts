@@ -28,6 +28,7 @@ export function exportSyncState(state: {
 /**
  * Deserialize Firestore data back to SyncPayload with safe defaults.
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function importSyncState(data: any): SyncPayload {
 	return {
 		routines: data?.routines || [],

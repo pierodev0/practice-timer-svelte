@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { formatISOTime } from '$lib/state/utils.js';
 import type { Session } from '$lib/state/types.js';
 
@@ -83,7 +84,6 @@ function writeSessionSheet(
 		}
 
 		const routineName = resolveRoutineName(session);
-		const totalMin = secToMin(session.totalSec);
 		const scheduledMin = secToMin(session.scheduledSec);
 		const elapsedMin = secToMin(session.elapsedSec);
 
@@ -183,7 +183,7 @@ export async function downloadMonthXLSX(
 	const sortedDays = Object.keys(monthDayGroups).sort();
 
 	sortedDays.forEach((dateStr) => {
-		const [y, m, d] = dateStr.split('-');
+		const [, m, d] = dateStr.split('-');
 		const dayNum = parseInt(d, 10);
 		const sheetName = `${dayNum} ${MONTHS_ES[parseInt(m, 10) - 1]}`;
 		const ws = workbook.addWorksheet(sheetName);

@@ -1,6 +1,6 @@
 import { nanoid } from 'nanoid';
 import { format } from 'date-fns';
-import type { Routine, Exercise } from './types.js';
+import type { Routine } from './types.js';
 
 /**
  * Pure utility functions — no DOM, no state, no side effects.
@@ -56,24 +56,23 @@ export function downloadJSON(content: string, filename: string): void {
 /**
  * Sanitize an imported routine (ensure all fields exist).
  */
-export function sanitizeImportedRoutine(r: any): Routine {
+export function sanitizeImportedRoutine(r: Record<string, unknown>): Routine {
 	return {
 		id: nanoid(),
-		name: r.name + ' (Import)',
-		exercises: (r.exercises || []).map((ex: any) => ({
+		name: (r.name as string) + ' (Import)',			exercises: ((r.exercises as Array<Record<string, unknown>>) || []).map((ex) => ({
 			id: nanoid(),
-			title: ex.title || 'Untitled',
-			bpm: ex.bpm || 100,
-			durationSec: ex.durationSec || 60,
-			remainingSec: ex.durationSec || 60,
+			title: (ex.title as string) || 'Untitled',
+			bpm: (ex.bpm as number) || 100,
+			durationSec: (ex.durationSec as number) || 60,
+			remainingSec: (ex.durationSec as number) || 60,
 			completed: false,
-			autoStart: ex.autoStart ?? true,
+			autoStart: (ex.autoStart as boolean) ?? true,
 			archived: !!ex.archived,
-			reps: ex.reps || 1,
+			reps: (ex.reps as number) || 1,
 			currentRep: 1,
-			comment: ex.comment || '',
-			statisticName: ex.statisticName || null,
-			statisticLogs: ex.statisticLogs || []
+			comment: (ex.comment as string) || '',
+			statisticName: (ex.statisticName as string | null) || null,
+			statisticLogs: (ex.statisticLogs as Array<{ date: string; value: number; sessionId?: string }>) || []
 		}))
 	};
 }

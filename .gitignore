@@ -24,4 +24,4 @@ vite.config.ts.timestamp-*
 
 .atl/
 .codegraph/
-old-app/
+# old-app/

@@ -693,8 +693,11 @@ export function saveData(skipCloudSync?: boolean): void {
 	);
 
 	if (!skipCloudSync) {
-		// Cloud sync will be wired in PR 3 when Firebase modules exist
-		// The old app used import('./firebase/sync.js') which will be added back
+		try {
+			import('../firebase/sync.js').then((m) => m.scheduleCloudSync()).catch(() => {});
+		} catch {
+			// Firebase not available — silent fail
+		}
 	}
 }
 

@@ -45,6 +45,65 @@ describe('store.svelte.ts', () => {
 	});
 
 	// ============================================================
+	// resetAllData
+	// ============================================================
+	describe('resetAllData', () => {
+		it('removes localStorage and restores factory defaults', () => {
+			// Setup: save some custom data first
+			const s = store.getState();
+			const originalCount = s.routines.length;
+			expect(s.bpm).toBe(120);
+
+			store.saveData(true);
+			expect(localStorageMock.setItem).toHaveBeenCalled();
+
+			// Now reset
+			store.resetAllData();
+
+			// localStorage should be written (cleared + restored)
+			expect(localStorageMock.removeItem).toHaveBeenCalledWith('musicRoutineApp_v36_stats');
+
+			// Default state restored
+			const after = store.getState();
+			expect(after.routines).toHaveLength(12); // 12 sample modules
+			expect(after.currentRoutineId).toBe('module-1');
+			expect(after.stats).toEqual({});
+			expect(after.sessions).toEqual([]);
+			expect(after.globalSeconds).toBe(0);
+			expect(after.activeExerciseId).toBeNull();
+			expect(after.exerciseRemaining).toBe(0);
+			expect(after.isExercisePlaying).toBe(false);
+			expect(after.isAudioOn).toBe(false);
+			expect(after.bpm).toBe(120);
+			expect(after.autoplayRoutine).toBe(false);
+			expect(after.pendingDetailCompletion).toBe(false);
+			expect(after.viewingExerciseId).toBeNull();
+			expect(after.newExerciseForm).toEqual({ bpm: 100, min: 2, sec: 0, reps: 1 });
+		});
+
+		it('restores routines with correct module names', () => {
+			store.resetAllData();
+			const after = store.getState();
+			expect(after.routines[0].name).toBe('Module 1');
+			expect(after.routines[5].name).toBe('Module 6');
+			expect(after.routines[11].name).toBe('Module 12');
+		});
+
+		it('persists reset state to localStorage', () => {
+			store.resetAllData();
+			// saveData is called inside resetAllData
+			const calls = localStorageMock.setItem.mock.calls;
+			const lastCall = calls[calls.length - 1];
+			expect(lastCall).toBeDefined();
+			const [key, json] = lastCall;
+			expect(key).toBe('musicRoutineApp_v36_stats');
+			const parsed = JSON.parse(json);
+			expect(parsed.routines).toHaveLength(12);
+			expect(parsed.stats).toEqual({});
+		});
+	});
+
+	// ============================================================
 	// getState
 	// ============================================================
 	describe('getState', () => {

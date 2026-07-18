@@ -6,6 +6,7 @@
 	import RoutinesView from '$lib/components/Routines/RoutinesView.svelte';
 	import HistoryView from '$lib/components/History/HistoryView.svelte';
 	import StatsView from '$lib/components/Stats/StatsView.svelte';
+	import SettingsView from '$lib/components/Settings/SettingsView.svelte';
 	import CreateExerciseModal from '$lib/components/Modals/CreateExerciseModal.svelte';
 	import StatInputModal from '$lib/components/Modals/StatInputModal.svelte';
 	import FinishModal from '$lib/components/Modals/FinishModal.svelte';
@@ -44,6 +45,7 @@
 	// ============================================================
 	let syncStatus = $state<'idle' | 'syncing' | 'synced' | 'error'>('idle');
 	let currentUser = $state<any>(null);
+	let lastSyncTime = $state('nunca');
 	let showSyncToast = $state(false);
 	let syncToastTimeout: ReturnType<typeof setTimeout> | null = null;
 
@@ -105,15 +107,59 @@
 		window.addEventListener('beforeunload', handleBeforeUnload);
 
 		// ============================================================
+		// Setup date filter defaults for Stats view
+		// ============================================================
+		setupDateDefaults();
+
+		// ============================================================
+		// Register Service Worker (PWA)
+		// ============================================================
+		registerServiceWorker();
+
+		// ============================================================
 		// Firebase Auth & Sync
 		// ============================================================
 		initFirebase();
+
+		// ============================================================
+		// Sortable re-init on exercises rendered
+		// (Dashboard handles Sortable in onMount, but re-init
+		// is needed after exercise list changes)
+		// ============================================================
+		window.addEventListener('exercises-rendered', () => {
+			// Dashboard's onMount handles Sortable initialization.
+			// This event is a fallback for any custom re-init needs.
+		});
 
 		return () => {
 			worker?.terminate();
 			window.removeEventListener('beforeunload', handleBeforeUnload);
 		};
 	});
+
+	function setupDateDefaults() {
+		const end = new Date();
+		const start = new Date();
+		start.setDate(start.getDate() - 7);
+		// Dispatch a custom event that StatsView can pick up
+		window.dispatchEvent(
+			new CustomEvent('stats-date-defaults', {
+				detail: {
+					start: start.toISOString().slice(0, 10),
+					end: end.toISOString().slice(0, 10)
+				}
+			})
+		);
+	}
+
+	function registerServiceWorker() {
+		if ('serviceWorker' in navigator) {
+			navigator.serviceWorker
+				.register('/sw.js')
+				.then((reg) => console.log('Service Worker registered', reg))
+				.catch((err) => console.log('Service Worker failed', err));
+		}
+	}
 
 	async function initFirebase() {
 		try {
@@ -149,6 +195,9 @@
 			// Listen for sync status events
 			window.addEventListener('sync-status', ((e: CustomEvent) => {
 				syncStatus = e.detail.status;
+				if (e.detail.status === 'synced') {
+					lastSyncTime = new Date().toLocaleString();
+				}
 				showSyncToast = true;
 				if (syncToastTimeout) clearTimeout(syncToastTimeout);
 				syncToastTimeout = setTimeout(() => {
@@ -516,13 +565,12 @@
 		/>
 
 	{:else if activeTab === 'settings'}
-		<div class="bg-[#E53935] text-white p-4 pt-6 pb-4 shadow-md sticky top-0 z-20">
-			<h2 class="text-lg font-medium text-center"><i class="fas fa-cog mr-2"></i>Ajustes</h2>
-		</div>
-		<div class="p-4 text-center text-gray-400 py-12">
-			<i class="fas fa-cog text-4xl block mb-2"></i>
-			<p>Settings view will be implemented in PR 4</p>
-		</div>
+		<SettingsView
+			{currentUser}
+			{syncStatus}
+			{lastSyncTime}
+			onOpenStats={() => (activeTab = 'stats')}
+		/>
 	{/if}
 </div>
 

@@ -62,8 +62,8 @@
 		const handleBeforeUnload = () => saveData();
 		window.addEventListener('beforeunload', handleBeforeUnload);
 
-		// --- Service Worker (PWA) ---
-		if ('serviceWorker' in navigator) {
+		// --- Service Worker (PWA, only in production) ---
+		if ('serviceWorker' in navigator && import.meta.env.PROD) {
 			navigator.serviceWorker
 				.register('/sw.js')
 				.then((reg) => console.log('Service Worker registered', reg))

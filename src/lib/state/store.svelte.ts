@@ -65,7 +65,13 @@ export {
 	deleteDetailExercise,
 	getUsageCounts,
 	getRoutineUsage,
-	getSortedRoutines
+	getSortedRoutines,
+	createRoutine,
+	renameRoutine,
+	exportRoutine,
+	duplicateRoutineById,
+	deleteRoutineById,
+	importRoutinesFromJson
 } from './routines-ops.js';
 
 // Stats operations
@@ -84,3 +90,25 @@ export {
 
 // Persistence
 export { saveData, loadData, resetAllData } from './persistence.js';
+
+// Practice flow
+export {
+	openDetailsView,
+	handleExerciseCompletion,
+	finalizeCompletion,
+	completeDetailExercise,
+	forceFinishDetail,
+	handleFinish,
+	acceptFinish,
+	cancelFinish,
+	handleReset,
+	confirmReset,
+	cancelReset
+} from './practice-ops.js';
+
+// Backup & Restore
+export {
+	showArchivedExercises,
+	exportAllData,
+	deleteAllData
+} from './backup-ops.js';

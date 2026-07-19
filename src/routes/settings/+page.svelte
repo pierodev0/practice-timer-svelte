@@ -1,7 +1,8 @@
+<!-- eslint-disable-next-line svelte/no-navigation-without-resolve -->
 <script lang="ts">
 	import { goto } from '$app/navigation';
-	import { getState, getCurrentRoutine, resetAllData } from '$lib/state/store.svelte.js';
-	import { downloadJSON } from '$lib/state/utils.js';
+	import { getState, getCurrentRoutine } from '$lib/state/store.svelte.js';
+	import { showArchivedExercises, exportAllData, deleteAllData } from '$lib/state/backup-ops.js';
 	import SyncSection from '$lib/components/Settings/SyncSection.svelte';
 	import BackupManager from '$lib/components/Settings/BackupManager.svelte';
 
@@ -12,23 +13,9 @@
 	let routine = $derived(getCurrentRoutine());
 	let archivedCount = $derived(routine.exercises.filter((e) => e.archived).length);
 
-	function showArchivedExercises() {
-		const archived = routine.exercises.filter((e) => e.archived);
-		if (archived.length === 0) { alert('No hay ejercicios archivados.'); return; }
-		const list = archived.map((ex, i) => `${i + 1}. ${ex.title} (${ex.bpm} BPM)`).join('\n');
-		alert(`Ejercicios archivados (${archived.length}):\n\n${list}`);
-	}
-
-	function exportAllData() {
-		downloadJSON(
-			JSON.stringify({ routines: s.routines, stats: s.stats, sessions: s.sessions }, null, 2),
-			`backup_${new Date().toISOString().slice(0, 10)}.json`
-		);
-	}
-
 	function triggerRestore() { restoreInput?.click(); }
 
-	function restoreAllData(e: Event) {
+	async function restoreAllData(e: Event) {
 		const input = e.target as HTMLInputElement;
 		if (!input.files || !input.files[0]) return;
 		if (!confirm('Esto sobreescribirá todos los datos actuales. ¿Continuar?')) return;
@@ -49,7 +36,7 @@
 				mod.setActiveExerciseId(null);
 				mod.setExerciseRemaining(0);
 				mod.setGlobalSeconds(0);
-				mod.getCurrentRoutine().exercises.forEach((ex) => {
+				mod.getCurrentRoutine().exercises.forEach((ex: any) => {
 					ex.completed = false; ex.remainingSec = ex.durationSec; ex.currentRep = 1;
 				});
 				mod.saveData();
@@ -60,17 +47,6 @@
 		};
 		reader.readAsText(input.files[0]);
 		input.value = '';
-	}
-
-	function deleteAllData() {
-		const confirmed = confirm(
-			'⚠️ ¿Estás seguro?\n\nEsta acción borrará TODOS tus datos:\n• Rutinas y ejercicios\n• Estadísticas\n• Historial de práctica\n\nNo se puede deshacer.'
-		);
-		if (!confirmed) return;
-		const doubleCheck = prompt('Escribe "BORRAR" para confirmar:');
-		if (doubleCheck !== 'BORRAR') { alert('Cancelado. No se borró nada.'); return; }
-		resetAllData();
-		alert('Todos los datos han sido eliminados.');
 	}
 </script>
 
@@ -129,7 +105,8 @@
 
 	<!-- Links -->
 	<div class="card p-4">
-		<h3 class="text-xs uppercase text-gray-500 font-bold tracking-wider mb-3">Enlaces</h3>			<!-- eslint-disable-next-line svelte/no-navigation-without-resolve -->
+		<h3 class="text-xs uppercase text-gray-500 font-bold tracking-wider mb-3">Enlaces</h3>
+			<!-- eslint-disable-next-line svelte/no-navigation-without-resolve -->
 			<button type="button" id="settings-stats-btn" class="w-full flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 transition-colors text-left" onclick={() => goto('/stats')}>
 			<div class="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center text-purple-600 flex-shrink-0"><i class="fas fa-chart-line"></i></div>
 			<div><p class="font-medium text-gray-800 text-sm">Estadísticas y Progreso</p><p class="text-xs text-gray-400">Ver gráficos y datos de práctica</p></div>

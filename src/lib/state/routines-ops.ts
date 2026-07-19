@@ -6,6 +6,7 @@ import { nanoid } from 'nanoid';
 import { state, getCurrentRoutine, getExerciseById, setBpm, setAutoplayRoutine } from './state.svelte.js';
 import { pauseSequence } from './timer-ops.js';
 import { saveData } from './persistence.js';
+import { downloadJSON, sanitizeImportedRoutine } from './utils.js';
 import type { Routine, Exercise, Session } from './types.js';
 
 // ============================================================
@@ -225,4 +226,94 @@ export function getSortedRoutines(
 		}
 		return sortAsc ? cmp : -cmp;
 	});
+}
+
+// ============================================================
+// Routines CRUD (for the routines route page)
+// ============================================================
+
+/**
+ * Create a new Routine object with the given name.
+ * Returns the object so the caller can push it to the array.
+ */
+export function createRoutine(name: string): Routine {
+	return {
+		id: nanoid(),
+		name: name.trim(),
+		exercises: [],
+		createdAt: Date.now()
+	};
+}
+
+/**
+ * Rename a routine by ID.
+ */
+export function renameRoutine(id: string, newName: string): void {
+	const r = state.routines.find((x) => x.id === id);
+	if (!r) return;
+	r.name = newName.trim();
+	saveData();
+}
+
+/**
+ * Export a single routine as a JSON file download.
+ */
+export function exportRoutine(id: string): void {
+	const r = state.routines.find((x) => x.id === id);
+	if (!r) return;
+	downloadJSON(JSON.stringify(r, null, 2), `routine_${r.name.replace(/\W/g, '_')}.json`);
+}
+
+/**
+ * Duplicate a routine by ID (with "(Copia)" suffix).
+ */
+export function duplicateRoutineById(id: string): void {
+	const original = state.routines.find((x) => x.id === id);
+	if (!original) return;
+	const copy: Routine = JSON.parse(JSON.stringify(original));
+	copy.id = nanoid();
+	copy.name = original.name + ' (Copia)';
+	copy.createdAt = Date.now();
+	copy.exercises = original.exercises.map((ex) => ({
+		...ex,
+		id: nanoid(),
+		completed: false,
+		remainingSec: ex.durationSec,
+		currentRep: 1,
+		statisticLogs: []
+	}));
+	state.routines.push(copy);
+	saveData();
+}
+
+/**
+ * Delete a routine by ID.
+ * Returns false if it's the last routine (cannot delete).
+ */
+export function deleteRoutineById(id: string): boolean {
+	if (state.routines.length <= 1) return false;
+	const idx = state.routines.findIndex((r) => r.id === id);
+	if (idx === -1) return false;
+	state.routines.splice(idx, 1);
+	if (state.currentRoutineId === id) {
+		state.currentRoutineId = state.routines[0].id;
+	}
+	saveData();
+	return true;
+}
+
+/**
+ * Import routines from a JSON string.
+ * Returns a human-readable result message on success.
+ * Throws on invalid JSON.
+ */
+export function importRoutinesFromJson(jsonStr: string): string {
+	const json = JSON.parse(jsonStr);
+	const toAdd = (Array.isArray(json) ? json : [json]).map((r: Record<string, unknown>) => ({
+		...sanitizeImportedRoutine(r),
+		createdAt: (r.createdAt as number) || Date.now()
+	}));
+	state.routines.push(...(toAdd as Routine[]));
+	saveData();
+	return `Importada(s) ${toAdd.length} rutina(s).`;
 }

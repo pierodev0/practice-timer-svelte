@@ -53,8 +53,6 @@ declare global {
 		Workbook: new () => any;
 	};
 
-	// Chart.js CDN
-	const Chart: new (ctx: CanvasRenderingContext2D, config: any) => any;
 }
 
 export {};

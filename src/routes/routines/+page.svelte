@@ -1,10 +1,8 @@
+<!-- eslint-disable-next-line svelte/no-navigation-without-resolve -->
 <script lang="ts">
 	import { goto } from '$app/navigation';
-	import { getState, saveData, switchRoutine, getSortedRoutines } from '$lib/state/store.svelte.js';
-	import { downloadJSON, sanitizeImportedRoutine } from '$lib/state/utils.js';
-	import { nanoid } from 'nanoid';
+	import { getState, saveData, getSortedRoutines, createRoutine, renameRoutine, exportRoutine, duplicateRoutineById, deleteRoutineById, importRoutinesFromJson, switchRoutine } from '$lib/state/store.svelte.js';
 	import RoutineCard from '$lib/components/Routines/RoutineCard.svelte';
-	import type { Routine } from '$lib/state/types.js';
 
 	const SORT_MODES = [
 		{ key: 'created', label: 'Creado', icon: 'fa-clock', defaultAsc: false },
@@ -26,14 +24,13 @@
 	function showNewRoutineInput() {
 		const name = prompt('Nueva rutina:');
 		if (name && name.trim()) {
-			s.routines.push({ id: nanoid(), name: name.trim(), exercises: [], createdAt: Date.now() });
+			s.routines.push(createRoutine(name));
 			saveData();
 		}
 	}
 
 	function handleSelect(id: string) {
 		switchRoutine(id);
-		// eslint-disable-next-line svelte/no-navigation-without-resolve
 		goto('/practice');
 	}
 
@@ -41,36 +38,18 @@
 		const r = s.routines.find((x) => x.id === id);
 		if (!r) return;
 		const newName = prompt('Renombrar:', r.name);
-		if (newName && newName.trim()) { r.name = newName.trim(); saveData(); }
-	}
-
-	function handleExport(id: string) {
-		const r = s.routines.find((x) => x.id === id);
-		if (r) downloadJSON(JSON.stringify(r, null, 2), `routine_${r.name.replace(/\W/g, '_')}.json`);
+		if (newName && newName.trim()) {
+			renameRoutine(id, newName);
+		}
 	}
 
 	function handleDuplicate(id: string) {
-		const original = s.routines.find((x) => x.id === id);
-		if (!original) return;
-		const copy: Routine = {
-			id: nanoid(), name: original.name + ' (Copia)', createdAt: Date.now(),
-			exercises: original.exercises.map((ex) => ({ ...ex, id: nanoid(), completed: false, remainingSec: ex.durationSec, currentRep: 1, statisticLogs: [] }))
-		};
-		s.routines.push(copy);
-		saveData();
+		duplicateRoutineById(id);
 	}
 
-	async function handleDelete(id: string) {
-		if (s.routines.length <= 1) { alert('No puedes eliminar la única rutina.'); return; }
-		if (!confirm('¿Eliminar esta rutina para siempre?')) return;
-		const idx = s.routines.findIndex((r) => r.id === id);
-		if (idx === -1) return;
-		s.routines.splice(idx, 1);
-		if (s.currentRoutineId === id) {
-			const mod = await import('$lib/state/store.svelte.js');
-			mod.setCurrentRoutineId(s.routines[0].id);
-		}
-		saveData();
+	function handleDelete(id: string) {
+		if (deleteRoutineById(id)) return;
+		alert('No puedes eliminar la única rutina.');
 	}
 
 	function triggerImport() { importInputEl?.click(); }
@@ -80,13 +59,8 @@
 		const reader = new FileReader();
 		reader.onload = (e) => {
 			try {
-				const json = JSON.parse(e.target?.result as string);
-				const toAdd = (Array.isArray(json) ? json : [json]).map((r: Record<string, unknown>) => ({
-					...sanitizeImportedRoutine(r), createdAt: (r.createdAt as number) || Date.now()
-				}));
-				s.routines.push(...toAdd);
-				saveData();
-				alert(`Importadas ${toAdd.length} rutina(s).`);
+				const msg = importRoutinesFromJson(e.target?.result as string);
+				alert(msg);
 			} catch (err) {
 				alert('Error al importar: ' + (err instanceof Error ? err.message : 'Desconocido'));
 			}
@@ -143,7 +117,7 @@
 				activeCount={routine.exercises.filter((e) => !e.archived).length}
 				archivedCount={routine.exercises.filter((e) => e.archived).length}
 				onSelect={handleSelect} onRename={handleRename}
-				onExport={handleExport} onDuplicate={handleDuplicate} onDelete={handleDelete}
+				onExport={exportRoutine} onDuplicate={handleDuplicate} onDelete={handleDelete}
 			/>
 		{/each}
 	{/if}

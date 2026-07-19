@@ -1,9 +1,15 @@
+<!--
+  Dashboard — presentational component for the practice view.
+  Sortable.js is loaded dynamically only when this component mounts.
+-->
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import { loadScript } from '$lib/load-script.js';
 	import { getState, getCurrentRoutine, getVisibleExercises, adjustBpm, toggleGlobalAudioOnly, toggleListExercise, saveData } from '$lib/state/store.svelte.js';
 	import TimerBar from './TimerBar.svelte';
 	import ExerciseCard from './ExerciseCard.svelte';
-	// SortableInstance is globally declared in app.d.ts
+
+	const SORTABLE_CDN = 'https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js';
 
 	let {
 		onFinish = () => {},
@@ -27,12 +33,15 @@
 		visibleExercises.reduce((sum, e) => sum + e.durationSec * e.reps, 0)
 	);
 
-	// Sortable.js
+	// Sortable.js (lazy-loaded)
 	let exerciseListEl: HTMLDivElement | undefined = $state();
-	let sortableInstance: SortableInstance | null = null;
+	let sortableInstance: any = null;
 
-	onMount(() => {
-		if (typeof Sortable !== 'undefined' && exerciseListEl) {
+	onMount(async () => {
+		await loadScript(SORTABLE_CDN);
+		const Sortable = (globalThis as any).Sortable;
+
+		if (Sortable && exerciseListEl) {
 			sortableInstance = new Sortable(exerciseListEl, {
 				animation: 200,
 				delay: 200,
@@ -50,10 +59,10 @@
 					const r = getCurrentRoutine();
 					const exercises = r.exercises;
 					if (evt.oldIndex !== evt.newIndex) {
-						const visible = exercises.filter((e) => !e.archived);
+						const visible = exercises.filter((e: any) => !e.archived);
 						const [moved] = visible.splice(evt.oldIndex, 1);
 						visible.splice(evt.newIndex, 0, moved);
-						const archived = exercises.filter((e) => e.archived);
+						const archived = exercises.filter((e: any) => e.archived);
 						r.exercises = [...visible, ...archived];
 						saveData();
 					}
@@ -86,10 +95,7 @@
 <div class="flex flex-col h-full">
 	<!-- Header -->
 	<header class="bg-[#E53935] text-white pt-4 pb-6 px-4 rounded-b-3xl shadow-lg z-10 relative">
-		<!-- Routine name -->
-		<div class="flex justify-center items-center mb-3">
-			<h1 id="current-routine-title" class="text-lg font-medium">{routine.name}</h1>
-		</div>
+		<h1 id="current-routine-title" class="text-lg font-medium text-center mb-3">{routine.name}</h1>
 
 		<!-- BPM controls -->
 		<div class="flex items-center justify-center gap-4 mb-3">
@@ -114,7 +120,7 @@
 			</button>
 		</div>
 
-		<!-- Play button + timer row -->
+		<!-- Play button -->
 		<div class="flex items-center justify-center gap-4 mb-3">
 			<button
 				type="button"
@@ -134,7 +140,7 @@
 		<!-- TimerBar -->
 		<TimerBar globalSeconds={s.globalSeconds} {totalRoutineTime} />
 
-		<!-- Autoplay toggle + FINISH + RESET -->
+		<!-- Autoplay + FINISH + RESET -->
 		<div class="flex items-center justify-between">
 			<label class="flex items-center gap-2 text-xs text-white/80 cursor-pointer select-none">
 				<input

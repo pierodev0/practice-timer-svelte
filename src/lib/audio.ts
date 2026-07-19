@@ -2,9 +2,14 @@
 /**
  * Audio module — Tone.js metronome and bell completion sound.
  *
+ * Tone.js is loaded dynamically (not included in app.html).
  * Usage:
  *   import { initAudio, startMetronome, stopMetronome, playBellSound } from '$lib/audio.js';
  */
+
+import { loadScript } from '$lib/load-script.js';
+
+const TONE_CDN = 'https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js';
 
 /**
  * Get Tone from the global scope (CDN-loaded).
@@ -22,9 +27,14 @@ let _isAudioOn = false;
 /**
  * Initialize Tone.js and create synthesizers.
  * Safe to call multiple times (only creates once).
+ * Loads Tone.js dynamically if not already loaded.
  */
 export async function initAudio(): Promise<void> {
 	if (_initialized) return;
+
+	// Lazy-load Tone.js from CDN
+	await loadScript(TONE_CDN);
+
 	const Tone = getTone();
 	if (!Tone) return;
 	await Tone.start();

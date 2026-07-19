@@ -1,6 +1,9 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { formatISOTime } from '$lib/state/utils.js';
+import { loadScript } from '$lib/load-script.js';
 import type { Session } from '$lib/state/types.js';
+
+const EXCELJS_CDN = 'https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js';
 
 /**
  * Convert seconds to whole minutes (rounded).
@@ -134,6 +137,7 @@ export async function downloadDayXLSX(
 	resolveRoutineName: (session: Session) => string,
 	dateStr: string
 ): Promise<void> {
+	await loadScript(EXCELJS_CDN);
 	const ExcelJS = (window as any).ExcelJS;
 	if (!ExcelJS) {
 		alert('ExcelJS library not loaded. Please check your internet connection.');
@@ -170,6 +174,7 @@ export async function downloadMonthXLSX(
 	month: number,
 	monthLabel: string
 ): Promise<void> {
+	await loadScript(EXCELJS_CDN);
 	const ExcelJS = (window as any).ExcelJS;
 	if (!ExcelJS) {
 		alert('ExcelJS library not loaded. Please check your internet connection.');
